@@ -3,3 +3,9 @@ chromedriver
 __pycache__
 
 data
+
+mtgmelee.db
+
+.DS_Store
+
+.vscode
