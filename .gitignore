@@ -8,4 +8,4 @@ mtgmelee.db
 
 .DS_Store
 
-.vscode
+.vscode/*
