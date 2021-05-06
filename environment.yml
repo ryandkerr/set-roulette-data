@@ -1,0 +1,6 @@
+name: set-roulette-data
+dependencies:
+  - python=3.9
+  - bs4=4.9
+  - requests=2.25
+  - selenium=3.141
