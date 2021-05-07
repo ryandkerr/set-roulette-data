@@ -3,8 +3,8 @@ This project scrapes and analyzes data from [MTGMelee](http://mtgmelee.com)
 tournaments.
 
 ## Tournament Results Scraper
-This scrapes the HTML of the provided tournament results page and saves the raw
-files to `./data/raw/<TOURNAMENT_ID>/standings`. Then save the html files of all decklists
+This script scrapes the HTML of the provided tournament results page and saves the raw
+files to `./data/raw/<TOURNAMENT_ID>/standings`. It then saves the html files of all decklists
 in the tournament to `./data/raw/<TOURNAMENT_ID>/decklists`
 
 Usage:
@@ -36,4 +36,9 @@ conda env create -f environment.yml
 If you have already created this environment, activate it
 ```
 conda activate set-roulette-data
+```
+
+Then download the packages that aren't available with conda:
+```
+pip install -r requirements.txt
 ```
