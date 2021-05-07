@@ -7,7 +7,9 @@ class BulkSkryfallFetcher(object):
 
     def fetch_all(self):
         out = []
-        for card in self.card_names:
+        for i, card in enumerate(self.card_names):
+            if i % 10 == 0:
+                print(f'Fetching card {i} out of {len(self.card_names)}')
             time.sleep(.1)
             scry_card = scrython.cards.Named(exact=card)
             out.append(scry_card)

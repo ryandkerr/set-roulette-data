@@ -31,3 +31,4 @@ if __name__ == '__main__':
                                        cards_table=CARDS_TABLE,
                                        players_table=PLAYERS_TABLE)
             db_writer.write_to_db()
+
