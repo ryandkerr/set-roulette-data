@@ -3,7 +3,7 @@ from mtgmelee.scrapers import TournamentStandingsScraper, StandingsToDecklistsSc
 
 if __name__ == '__main__':
     if len(sys.argv) != 2:
-        raise StandardError('Usage: python3 scrape_tournament.py <TOURNAMENT_URL>')
+        raise Exception('Usage: python3 scrape_tournament.py <TOURNAMENT_URL>')
 
     chrome_driver_path = './chromedriver'
     data_dir = 'data'

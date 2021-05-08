@@ -1,3 +1,5 @@
+import pdb
+
 from .base import *
 from bs4 import BeautifulSoup
 
@@ -5,19 +7,13 @@ class DecklistParser(object):
     def __init__(self, soup):
         self.soup = soup
 
-    def parse(self):
-        id = int(self.soup.find('input', attrs={'name':'decklistId'})['value'])
+    def parse_decklist(self):
+        id = self._get_deck_id()
         url = self.soup.find('meta', property='og:url')['content']
-        title = self.soup.find('meta', property='og:title')['content']
-        tournament_id = int(self.soup.find('div', class_='decklist-card-info-tournament') \
-            .find('a')['href'].split('/')[-1])
+        title = self._get_title()
+        tournament_id = self._get_tournament_id()
+        player = self._get_player()
 
-        player_info = self.soup.find('span', class_='decklist-card-title-author').find('a')
-        player_name = player_info.string
-        player_url = 'http://mtgmelee.com' + player_info['href']
-        player_id = player_info['href'].split('/')[-1]
-        player = Player(name=player_name, url=player_url, id=player_id)
-        
         tables = self.soup.find('div', class_='decklist-card-body') \
                      .find_all('table', class_='decklist-section-table')
 
@@ -34,7 +30,77 @@ class DecklistParser(object):
                         main_deck=main_deck,
                         sideboard=sideboard,
                         tournament_id=tournament_id)
-        
+
+    def parse_results(self):
+        tournament_id = self._get_tournament_id()
+        player1 = self._get_player()
+        player1_deck_id = self._get_deck_id()
+
+        tb = self.soup.find('div', id='tournament-path-grid-item') \
+                 .find_all('table')[2].find('tbody')
+
+        results = []
+        rows = tb.find_all('tr')
+        for row in rows:
+            tds = row.find_all('td')
+            rnd = tds[0].string
+            result_str = tds[3].string
+            if len(result_str.split(' won ')) == 1:  # handle byes
+                r = Result(tournament_id=tournament_id,
+                           rnd=rnd,
+                           player1=player1,
+                           player1_deck_id=player1_deck_id,
+                           player2=None,
+                           player2_deck_id=None,
+                           winner=player1,
+                           wins=None,
+                           losses=None)
+
+                results.append(r)
+                continue
+
+            winner_name = result_str.split(' won ')[0]
+            wins = int(result_str.split(' won ')[1][0])
+            losses = int(result_str.split(' won ')[1][2])
+
+            player2_id = tds[1].find('a')['href'].split('/')[-1]
+            player2_name = tds[1].find('a').string
+            player2_url = "https://mtgmelee.com" + tds[1].find('a')['href']
+            player2 = Player(id=player2_id, url=player2_url, name=player2_name)
+            player2_deck_id = int(tds[2].find('a')['href'].split('/')[-1])
+
+            winner = player1 if winner_name == player1.name else player2
+
+            r = Result(tournament_id=self._get_tournament_id(),
+                       rnd=rnd,
+                       player1=player1,
+                       player1_deck_id=player1_deck_id,
+                       player2=player2,
+                       player2_deck_id=player2_deck_id,
+                       winner=winner,
+                       wins=wins,
+                       losses=losses)
+
+            results.append(r)
+        return results
+
+    def _get_deck_id(self):
+        return int(self.soup.find('input', attrs={'name':'decklistId'})['value'])
+
+    def _get_player(self):
+        player_info = self.soup.find('span', class_='decklist-card-title-author').find('a')
+        player_name = player_info.string
+        player_url = 'https://mtgmelee.com' + player_info['href']
+        player_id = player_info['href'].split('/')[-1]
+        return Player(name=player_name, url=player_url, id=player_id)
+
+    def _get_title(self):
+        return self.soup.find('meta', property='og:title')['content']
+    
+    def _get_tournament_id(self):
+        return int(self.soup.find('div', class_='decklist-card-info-tournament') \
+                            .find('a')['href'].split('/')[-1])
+
     def _is_sideboard(self, table):
         return table.find('thead').find_all('td')[0].string.lower() == 'sideboard'
 
@@ -62,4 +128,11 @@ class DecklistParser(object):
 
         return out
 
-        
+if __name__ == '__main__':
+    test_file = './data/raw/4985/decklists/decklist_104651.html'
+    f = open(test_file)
+    html = f.read()
+    f.close()
+
+    soup = BeautifulSoup(html, 'html.parser')
+    pdb.set_trace()

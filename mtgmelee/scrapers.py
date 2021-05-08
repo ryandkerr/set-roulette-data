@@ -24,7 +24,6 @@ class TournamentStandingsScraper(object):
         driver = self._create_driver()
         driver.get(self.tournament_url)
 
-        
         if not os.path.exists(self.out_dir):
             os.makedirs(self.out_dir)
         

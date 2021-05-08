@@ -14,12 +14,23 @@ python3 scrape_tournament.py <TOURNAMENT_URL>
 
 ## Parse & Save Decklists to DB
 This script parses a directory of downloaded decklist pages and writes the data
-to the `mtgmelee.db` sqlite3 database.
+(decks, players, and cards) to the `mtgmelee.db` sqlite3 database.
 
 Usage:
 ```
-python3 parse_decklists_to_db.py <PATH_TO_DECKLIST_DIR>
+python3 parse_decklists_to_db.py <PATH/TO/DECKLIST/DIR>
 ```
+
+## Populate Scryfall DB
+This script populates the scryfall card table with cards that are in the current
+tournament results card table. It will only hit scryfall for cards that are
+not currently in the scryfall database.
+
+Usage:
+```
+python3 populate_scyfall_db.py
+```
+
 <br><br>
 
 # Dev Setup
