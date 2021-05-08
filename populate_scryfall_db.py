@@ -43,10 +43,25 @@ if __name__ == '__main__':
     results = cur.fetchall()
     card_names = [row[0] for row in results]
 
-    fetcher = BulkSkryfallFetcher(card_names[:10])
+    fetcher = BulkSkryfallFetcher(card_names)
     scryfall_cards = fetcher.fetch_all()
 
     for card in scryfall_cards:
+        try:
+            mana_cost = card.mana_cost()
+        except:
+            mana_cost = None
+        
+        try:
+            cmc = int(card.cmc())
+        except:
+            cmc = None
+
+        try:
+            colors = card.colors()
+        except:
+            colors = []
+
         cur.execute(f"""
         REPLACE INTO {SCRYFALL_CARD_TABLE} (id, name, mana_cost, cmc, type_line, color_w, color_u, color_b, color_r, color_g)
         VALUES (:id, :name, :mana_cost, :cmc, :type_line, :color_w, :color_u, :color_b, :color_r, :color_g);
@@ -54,15 +69,17 @@ if __name__ == '__main__':
         {
             "id": card.id(),
             "name": card.name(),
-            "mana_cost": card.mana_cost(),
-            "cmc": int(card.cmc()),
+            "mana_cost": mana_cost,
+            "cmc": cmc,
             "type_line": card.type_line(),
-            "color_w": is_color(color_list=card.colors(), color='W'),
-            "color_u": is_color(color_list=card.colors(), color='U'),
-            "color_b": is_color(color_list=card.colors(), color='B'),
-            "color_r": is_color(color_list=card.colors(), color='R'),
-            "color_g": is_color(color_list=card.colors(), color='G')
+            "color_w": is_color(color_list=colors, color='W'),
+            "color_u": is_color(color_list=colors, color='U'),
+            "color_b": is_color(color_list=colors, color='B'),
+            "color_r": is_color(color_list=colors, color='R'),
+            "color_g": is_color(color_list=colors, color='G')
         })
+
+        conn.commit()
 
     cur.close(),
     conn.commit()
