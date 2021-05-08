@@ -82,9 +82,9 @@ class DeckToDBWriter(object):
         CREATE TABLE IF NOT EXISTS {self.cards_table} (
             deck_id INT NOT NULL,
             name STRING NOT NULL,
-            quantity STRING NOT NULL,
+            quantity INT NOT NULL,
             is_sideboard BOOL NOT NULL,
-            PRIMARY KEY(deck_id, name, quantity, is_sideboard)
+            PRIMARY KEY(deck_id, name, is_sideboard)
         );
         """)
 

@@ -9,12 +9,12 @@ in the tournament to `./data/raw/<TOURNAMENT_ID>/decklists`
 
 Usage:
 ```
-python3 scrape_tournament.py <TOURNAMENT_URL>
+python3 scrape_tournament.py <TOURNAMENT_URL> [<TOURNAMENT_URL>...]
 ```
 
 ## Parse & Save Decklists to DB
 This script parses a directory of downloaded decklist pages and writes the data
-(decks, players, and cards) to the `mtgmelee.db` sqlite3 database.
+(decks, players, cards, and results) to the `mtgmelee.db` sqlite3 database.
 
 Usage:
 ```

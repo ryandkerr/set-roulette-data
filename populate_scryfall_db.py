@@ -43,43 +43,52 @@ if __name__ == '__main__':
     results = cur.fetchall()
     card_names = [row[0] for row in results]
 
-    fetcher = BulkSkryfallFetcher(card_names)
-    scryfall_cards = fetcher.fetch_all()
+    interval = 100
+    start_ix = 0
+    end_ix = interval
+    while start_ix < len(card_names):
+        print(f'Progress: {start_ix} out of {len(card_names)} cards')
+        current_batch = card_names[start_ix:end_ix]
+        fetcher = BulkSkryfallFetcher(current_batch)
+        scryfall_cards = fetcher.fetch_all()
 
-    for card in scryfall_cards:
-        try:
-            mana_cost = card.mana_cost()
-        except:
-            mana_cost = None
-        
-        try:
-            cmc = int(card.cmc())
-        except:
-            cmc = None
+        for card in scryfall_cards:
+            try:
+                mana_cost = card.mana_cost()
+            except:
+                mana_cost = None
+            
+            try:
+                cmc = int(card.cmc())
+            except:
+                cmc = None
 
-        try:
-            colors = card.colors()
-        except:
-            colors = []
+            try:
+                colors = card.colors()
+            except:
+                colors = []
 
-        cur.execute(f"""
-        REPLACE INTO {SCRYFALL_CARD_TABLE} (id, name, mana_cost, cmc, type_line, color_w, color_u, color_b, color_r, color_g)
-        VALUES (:id, :name, :mana_cost, :cmc, :type_line, :color_w, :color_u, :color_b, :color_r, :color_g);
-        """,
-        {
-            "id": card.id(),
-            "name": card.name(),
-            "mana_cost": mana_cost,
-            "cmc": cmc,
-            "type_line": card.type_line(),
-            "color_w": is_color(color_list=colors, color='W'),
-            "color_u": is_color(color_list=colors, color='U'),
-            "color_b": is_color(color_list=colors, color='B'),
-            "color_r": is_color(color_list=colors, color='R'),
-            "color_g": is_color(color_list=colors, color='G')
-        })
+            cur.execute(f"""
+            REPLACE INTO {SCRYFALL_CARD_TABLE} (id, name, mana_cost, cmc, type_line, color_w, color_u, color_b, color_r, color_g)
+            VALUES (:id, :name, :mana_cost, :cmc, :type_line, :color_w, :color_u, :color_b, :color_r, :color_g);
+            """,
+            {
+                "id": card.id(),
+                "name": card.name(),
+                "mana_cost": mana_cost,
+                "cmc": cmc,
+                "type_line": card.type_line(),
+                "color_w": is_color(color_list=colors, color='W'),
+                "color_u": is_color(color_list=colors, color='U'),
+                "color_b": is_color(color_list=colors, color='B'),
+                "color_r": is_color(color_list=colors, color='R'),
+                "color_g": is_color(color_list=colors, color='G')
+            })
 
         conn.commit()
+        
+        start_ix = end_ix
+        end_ix += interval
 
     cur.close(),
     conn.commit()

@@ -67,7 +67,10 @@ class DecklistParser(object):
             player2_name = tds[1].find('a').string
             player2_url = "https://mtgmelee.com" + tds[1].find('a')['href']
             player2 = Player(id=player2_id, url=player2_url, name=player2_name)
-            player2_deck_id = int(tds[2].find('a')['href'].split('/')[-1])
+            if tds[2].find('a'):  # it is possible for someone to not submit a decklist
+                player2_deck_id = int(tds[2].find('a')['href'].split('/')[-1])
+            else:
+                player2_deck_id = None
 
             winner = player1 if winner_name == player1.name else player2
 
@@ -112,7 +115,7 @@ class DecklistParser(object):
             names = [x.string for x in names]
             quantities = table.find('tbody') \
                               .find_all('td', class_='decklist-builder-card-quantity-cell')
-            quantities = [x.string for x in quantities]
+            quantities = [int(x.string) for x in quantities]
 
             assert(len(names) == len(quantities))
 

@@ -71,10 +71,15 @@ class StandingsToDecklistsScraper(object):
                     .find('tbody') \
                     .find_all('td', class_='Decklists-column')
 
-                decklist_urls = [f"https://mtgmelee.com{row.find('a')['href']}" for row in decklist_rows]
+                decklist_urls = []
+                for row in decklist_rows:
+                    a = row.find('a')
+                    if a:  # is is possible for a player to not submit a decklist
+                        decklist_urls.append(f"https://mtgmelee.com{a['href']}")
+
                 for url in decklist_urls:
                     print(f'Scraping {url}')
-                    time.sleep(1)
+                    time.sleep(.2)
 
                     decklist_id = url.split('/')[-1]
                     response = requests.get(url)
