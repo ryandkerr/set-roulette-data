@@ -2,14 +2,14 @@
 This project scrapes and analyzes data from [MTGMelee](http://mtgmelee.com)
 tournaments.
 
-## Tournament Results Scraper
+## Scrape Tournament Standings
 This script scrapes the HTML of the provided tournament results page and saves the raw
 files to `./data/raw/<TOURNAMENT_ID>/standings`. It then saves the html files of all decklists
 in the tournament to `./data/raw/<TOURNAMENT_ID>/decklists`
 
 Usage:
 ```
-python3 scrape_tournament.py <TOURNAMENT_URL> [<TOURNAMENT_URL>...]
+python3 scrape_tournament.py <TOURNAMENT_URL> [<TOURNAMENT_URL> ...]
 ```
 
 ## Parse & Save Decklists to DB
@@ -18,7 +18,16 @@ This script parses a directory of downloaded decklist pages and writes the data
 
 Usage:
 ```
-python3 parse_decklists_to_db.py <PATH/TO/DECKLIST/DIR>
+python3 parse_decklists_to_db.py <PATH/TO/DECKLIST/DIR> [<PATH/TO/DECKLIST/DIR> ...]
+```
+
+## Parse & Save Results to DB
+This script parses a directory of downloaded tournament results pages and writes
+the results to the `mtgmelee.db` sqlite3 database.
+
+Usage:
+```
+python3 parse_results_to_db.py <PATH/TO/RESULTS/DIR> [<PATH/TO/RESULTS/DIR> ...]
 ```
 
 ## Populate Scryfall DB
@@ -48,6 +57,7 @@ If you have already created this environment, activate it
 ```
 conda activate set-roulette-data
 ```
+
 
 Then download the packages that aren't available with conda:
 ```

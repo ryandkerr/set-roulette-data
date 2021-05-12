@@ -131,6 +131,74 @@ class DecklistParser(object):
 
         return out
 
+
+class TournamentParser(object):
+    def __init__(self, soup):
+        self.soup = soup
+
+    def parse_results(self):
+        result_rows = self.soup.find('table', id='tournament-pairings-table') \
+                               .find('tbody') \
+                               .find_all('tr')
+
+        results = []
+        for row in result_rows:
+            tds = row.find_all('td')
+            player1 = self._get_player_from_a(tds[0].find('a'))
+            player1_deck_id = int(tds[1].find('a')['href'].split('/')[-1])
+
+            result_str = tds[4].string
+            if len(result_str.split(' won ')) == 1:  # handle byes
+                r = Result(tournament_id=self._get_tournament_id(),
+                           rnd=self._get_round(),
+                           player1=player1,
+                           player1_deck_id=player1_deck_id,
+                           player2=None,
+                           player2_deck_id=None,
+                           winner=player1,
+                           wins=None,
+                           losses=None)
+
+                results.append(r)
+                continue
+
+            winner_name = result_str.split(' won ')[0]
+            wins = int(result_str.split(' won ')[1][0])
+            losses = int(result_str.split(' won ')[1][2])
+
+            player2 = self._get_player_from_a(tds[2].find('a'))
+            if tds[3].find('a'):  # it is possible for someone to not submit a decklist
+                player2_deck_id = int(tds[3].find('a')['href'].split('/')[-1])
+            else:
+                player2_deck_id = None
+
+            winner = player1 if winner_name == player1.name else player2
+            r = Result(tournament_id=self._get_tournament_id(),
+                       rnd=self._get_round(),
+                       player1=player1,
+                       player1_deck_id=player1_deck_id,
+                       player2=player2,
+                       player2_deck_id=player2_deck_id,
+                       winner=winner,
+                       wins=wins,
+                       losses=losses)
+            results.append(r)
+        return results
+
+    def _get_player_from_a(self, a):
+        url = "https://mtgmelee.com" + a['href']
+        id = url.split('/')[-1]
+        name = a.string        
+        return Player(id=id, url=url, name=name)
+
+    def _get_tournament_id(self):
+        return int(self.soup.find('meta', property='og:url')['content'].split('/')[-1])
+
+    def _get_round(self):
+        return self.soup.find('div', id='pairings') \
+                        .find('button', class_='btn btn-primary round-selector active')['data-name']
+
+
 if __name__ == '__main__':
     test_file = './data/raw/4985/decklists/decklist_104651.html'
     f = open(test_file)
