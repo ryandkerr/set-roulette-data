@@ -1,7 +1,8 @@
-# set-roulette-data
+# Set Roulette Data
 This project scrapes and analyzes data from [MTGMelee](http://mtgmelee.com)
 tournaments.
 
+Before running any of the below scripts, activate your conda environment (see devsetup for instructions).
 ## Scrape Tournament Standings
 This script scrapes the HTML of the provided tournament results page and saves the raw
 files to `./data/raw/<TOURNAMENT_ID>/standings`. It then saves the html files of all decklists
@@ -21,7 +22,7 @@ Usage:
 python3 parse_decklists_to_db.py <PATH/TO/DECKLIST/DIR> [<PATH/TO/DECKLIST/DIR> ...]
 ```
 
-## Parse & Save Results to DB
+## Parse & Save Results to DB (not yet implemented)
 This script parses a directory of downloaded tournament results pages and writes
 the results to the `mtgmelee.db` sqlite3 database.
 
@@ -63,3 +64,8 @@ Then download the packages that aren't available with conda:
 ```
 pip install -r requirements.txt
 ```
+
+# Future Projects
+- Round-by-round results scraper
+- Player ELO
+- Host website with interactive data visualizations and articles

@@ -11,3 +11,5 @@ mtgmelee.db
 .vscode/*
 
 queries
+
+notebooks/.*

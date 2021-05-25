@@ -1,4 +1,5 @@
 import os
+import pdb
 import requests
 import sys
 import time
@@ -8,7 +9,7 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 
 
-class TournamentStandingsScraper(object):
+class TournamentScraper(object):
     def __init__(self,
                  *,
                  tournament_url,
@@ -20,7 +21,7 @@ class TournamentStandingsScraper(object):
         self.out_dir = out_dir
         self.sleep_sec = sleep_sec
 
-    def scrape(self):
+    def scrape_standings(self):
         driver = self._create_driver()
         driver.get(self.tournament_url)
 
@@ -43,6 +44,23 @@ class TournamentStandingsScraper(object):
 
             driver.execute_script('arguments[0].click();', button)
             standings_page += 1
+
+        driver.close()
+
+    def scrape_results(self):
+        driver = self._create_driver()
+        driver.get(self.tournament_url)
+
+        if not os.path.exists(self.out_dir):
+            os.makedirs(self.out_dir)
+        
+        #TODO
+        # for each round button
+            # click the button
+            # wait
+            # click "show 500 rows"
+            # wait
+            # save page to dir
 
         driver.close()
         
@@ -88,3 +106,10 @@ class StandingsToDecklistsScraper(object):
                     out = open(file_name, 'w')
                     out.write(str(decklist_soup))
                     out.close()
+
+if __name__ == '__main__':
+    scraper = TournamentScraper(tournament_url='https://mtgmelee.com/Tournament/View/389',
+        chrome_driver_path='~/Dropbox/projects/mtg/set-roulette/set-roulette-data/chromedriver',
+        out_dir='~/Dropbox/projects/mtg/set-roulette/set-roulette-data/data/raw/389/results')
+
+    scraper.scrape_results()
