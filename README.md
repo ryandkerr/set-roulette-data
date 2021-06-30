@@ -69,3 +69,4 @@ pip install -r requirements.txt
 - Round-by-round results scraper
 - Player ELO
 - Host website with interactive data visualizations and articles
+- Archetype classifier and archetype vs archetype winrates
