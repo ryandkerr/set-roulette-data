@@ -37,20 +37,21 @@ class DeckClustering(object):
         )
         model = model.fit(prepared.to_numpy())
     
-        deck_name_df = self._get_deck_name_df()
+        deck_info_df = self._get_deck_info_df()
         out = pd.merge(
             prepared,
-            deck_name_df,
+            deck_info_df,
             left_on='deck_id',
             right_on='id'
         )
         out['classification'] = model.labels_
-        out = out.reindex(columns=(['title'] + list([col for col in out.columns if col != 'title'])))
+        leftmost_cols = ['name', 'title']
+        out = out.reindex(columns=(leftmost_cols + list([col for col in out.columns if col not in leftmost_cols])))
         return out, model
     
     def plot_dendrogram(self, *, df, model, **kwargs):
-        if df['title'] is not None:
-            labels = df['title'].tolist()
+        if df['title'] is not None and df['name'] is not None:
+            labels = (df['title'] + ': ' + df['name']).tolist()
         else:
             labels = None
         self._plot_dendrogram(model, labels=labels, orientation="right", **kwargs)
@@ -102,36 +103,20 @@ class DeckClustering(object):
         cluster_summary = {}
         clusters = np.unique(df['classification'])
         for cluster in clusters:
-            s = df[df['classification'] == cluster].drop(['classification', 'id'], axis=1)
+            colnames = ['classification', 'id', 'name', 'title', 'wins', 'losses']
+            s = df[df['classification'] == cluster].drop(colnames, axis=1)
             s = s.sum()[1:].sort_values(ascending=False)
             cluster_summary[cluster] = ', '.join(list(s[0:3].index))
         return cluster_summary
 
     def get_winrate_matrix(self, df, min_cluster_size=4):
         clean_clusters = self.combine_small_clusters(df, min_cluster_size=min_cluster_size)
-
-        query = """
-        SELECT
-            player1_deck_id,
-            player2_deck_id,
-            CASE WHEN winner_id = player1_id THEN 1 ELSE 0 END as player1_wins
-        FROM results
-        WHERE
-            player2_id IS NOT NULL
-            
-        UNION ALL
-        SELECT
-            player2_deck_id as player1_deck_id,
-            player1_deck_id as player2_deck_id,
-            CASE WHEN winner_id = player2_id THEN 1 ELSE 0 END as player1_wins
-        FROM results
-        WHERE
-            player2_id IS NOT NULL
-        """
-
-        results_df = pd.read_sql_query(query, self.conn)
+        results_df = self._get_results_df()
 
         cleaned = clean_clusters[['id', 'classification']]
+        num_decklists_df = cleaned.groupby('classification').agg('count')
+        num_decklists_df = num_decklists_df.rename(columns={'id': 'Num Decks'})
+        
         tst = pd.merge(cleaned, results_df, how='left', left_on='id', right_on='player1_deck_id')
         tst = pd.merge(tst, cleaned, how='left', left_on='player2_deck_id', right_on='id', suffixes=('_player1', '_player2'))
         cleaned = tst[['player1_deck_id', 'player2_deck_id', 'classification_player1', 'classification_player2', 'player1_wins']]
@@ -148,6 +133,14 @@ class DeckClustering(object):
             values='final_col'
         )
 
+        summary = pd.merge(
+            summary,
+            num_decklists_df,
+            how='inner',
+            left_index=True,
+            right_index=True
+        )
+
         summary2 = cleaned[cleaned['classification_player1'] != cleaned['classification_player2']] \
             .groupby('classification_player1') \
             .agg({'player1_wins': ['count', 'mean']})
@@ -157,7 +150,19 @@ class DeckClustering(object):
 
         top_cards = self.get_cluster_summary(clean_clusters)
         summary['Top Cards'] = [top_cards[cluster] for cluster in summary.index]
+        summary.index.name = 'Deck Cluster'
         return summary
+
+    def combine_small_clusters(self, df, min_cluster_size=4):
+        out = df.copy()
+        grouped = out.groupby('classification')
+        g = grouped.size()
+
+        def classify(x, grouped, min_size): 
+            return str(x) if grouped[x] >= min_size else 'Other'
+
+        out['classification'] = [classify(x, g, min_cluster_size) for x in out['classification']]
+        return out
 
     def _classify(self, predictions, min_threshold=.6):
         mx = float('-inf')
@@ -195,16 +200,82 @@ class DeckClustering(object):
         ).fillna(0)
         return prepared
 
-    def _get_deck_name_df(self):
+    def _get_deck_info_df(self):
         deck_name_query = """
         SELECT
-            id,
-            title
+            decks.id,
+            title,
+            players.name
         FROM decks
+        JOIN players
+            ON decks.player_id = players.id
         """
 
+        results_summary_df = self._get_results_summary_df()
         deck_name_df = pd.read_sql_query(deck_name_query, self.conn)
-        return deck_name_df
+        deck_info_df = pd.merge(
+            deck_name_df,
+            results_summary_df,
+            left_on="id",
+            right_on="id"
+        )
+        return deck_info_df
+
+    def _get_results_df(self):
+        query = """
+        SELECT
+            player1_deck_id,
+            player2_deck_id,
+            CASE WHEN winner_id = player1_id THEN 1 ELSE 0 END as player1_wins
+        FROM results
+        WHERE
+            player2_id IS NOT NULL
+            
+        UNION ALL
+        SELECT
+            player2_deck_id as player1_deck_id,
+            player1_deck_id as player2_deck_id,
+            CASE WHEN winner_id = player2_id THEN 1 ELSE 0 END as player1_wins
+        FROM results
+        WHERE
+            player2_id IS NOT NULL
+        """
+
+        results_df = pd.read_sql_query(query, self.conn)
+        return results_df
+
+    def _get_results_summary_df(self):
+        query = """
+        WITH a as (
+            SELECT
+                player1_deck_id,
+                player2_deck_id,
+                CASE WHEN winner_id = player1_id THEN 1 ELSE 0 END as player1_wins
+            FROM results
+            WHERE
+                player2_id IS NOT NULL
+                
+            UNION ALL
+            SELECT
+                player2_deck_id as player1_deck_id,
+                player1_deck_id as player2_deck_id,
+                CASE WHEN winner_id = player2_id THEN 1 ELSE 0 END as player1_wins
+            FROM results
+            WHERE
+                player2_id IS NOT NULL
+        )
+
+        SELECT
+            player1_deck_id as id,
+            SUM(player1_wins) as wins,
+            COUNT(*) - SUM(player1_wins) as losses
+        FROM a
+        GROUP BY 1
+        """
+
+        results_summary_df = pd.read_sql_query(query, self.conn)
+        return results_summary_df
+
 
     def _plot_dendrogram(self, model, **kwargs):
         # Code from: https://scikit-learn.org/stable/auto_examples/cluster/plot_agglomerative_dendrogram.html
@@ -228,13 +299,3 @@ class DeckClustering(object):
         # Plot the corresponding dendrogram
         dendrogram(linkage_matrix, **kwargs)
 
-    def combine_small_clusters(self, df, min_cluster_size=4):
-        out = df.copy()
-        grouped = out.groupby('classification')
-        g = grouped.size()
-
-        def classify(x, grouped, min_size): 
-            return str(x) if grouped[x] >= min_size else 'Other'
-
-        out['classification'] = [classify(x, g, min_cluster_size) for x in out['classification']]
-        return out
